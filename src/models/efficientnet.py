@@ -20,6 +20,6 @@ class BinaryEfficientNet(nn.Module):
         super().__init__()
         self.backbone = EfficientNet.from_pretrained(pretrain)
         self.backbone._fc = nn.Linear(self.backbone._fc.in_features, 1)
-    
+
     def forward(self, batch):
         return self.backbone(batch)

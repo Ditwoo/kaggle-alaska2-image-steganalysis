@@ -1,11 +1,11 @@
+import warnings
 import torch
 import numpy as np
 from sklearn import metrics
 from catalyst.dl import Callback, CallbackOrder, State
 
 
-import warnings
-warnings.filterwarnings('ignore') 
+warnings.filterwarnings('ignore')
 
 
 def _alaska_weighted_auc(y_true: np.ndarray, y_valid: np.ndarray) -> float:

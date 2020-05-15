@@ -11,7 +11,7 @@ from .datasets import my_collator
 
 
 TRAIN_AUGMENTATIONS = alb.Compose([
-    alb.Resize(512, 512),
+    # alb.Resize(512, 512),
     alb.VerticalFlip(p=0.5),
     alb.HorizontalFlip(p=0.5),
     alb.JpegCompression(quality_lower=75, quality_upper=100, p=0.5),
@@ -21,7 +21,7 @@ TRAIN_AUGMENTATIONS = alb.Compose([
 ])
 
 VALID_AUGMENTATIONS = alb.Compose([
-    alb.Resize(512, 512),
+    # alb.Resize(512, 512),
     alb.Normalize(),
     # alb.ToFloat(max_value=255),
     alb.pytorch.ToTensorV2(),
@@ -53,7 +53,7 @@ class Experiment(ConfigExperiment):
 
         datasets["train"] = {
             "dataset": Dataset(
-                images=train["images"].values, 
+                images=train["images"].values,
                 labels=train["labels"].values,
                 transforms=TRAIN_AUGMENTATIONS,
             ),
@@ -65,7 +65,7 @@ class Experiment(ConfigExperiment):
         valid = df[df["folds"] == fold_index]
         datasets["valid"] = {
             "dataset": Dataset(
-                images=valid["images"].values, 
+                images=valid["images"].values,
                 labels=valid["labels"].values,
                 transforms=VALID_AUGMENTATIONS,
             ),
