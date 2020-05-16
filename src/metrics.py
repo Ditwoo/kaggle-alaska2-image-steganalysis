@@ -46,7 +46,6 @@ def _alaska_weighted_auc(y_true: np.ndarray, y_valid: np.ndarray) -> float:
     return competition_metric / normalization
 
 
-
 class WeightedAUC(Callback):
     def __init__(self, 
                  name: str = "wauc",
@@ -70,7 +69,7 @@ class WeightedAUC(Callback):
         pred = torch.sigmoid(state.output[self.outp].detach()).cpu().numpy().flatten()
         self.preds_container.append(pred)
 
-        state.batch_metrics[f"batch_{self.name}"] = _alaska_weighted_auc(target, pred)
+        # state.batch_metrics[f"batch_{self.name}"] = _alaska_weighted_auc(target, pred)
 
     def on_loader_end(self, state: State) -> None:
         score = _alaska_weighted_auc(
