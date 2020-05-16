@@ -49,3 +49,25 @@ if __name__ == "__main__":
     main(from_dir, to_dir)
 
 ```
+
+
+## Training script example:
+
+```bash
+#!/bin/bash
+
+EXP_NAME='my-experiment'
+LOGDIR=./logs/$EXP_NAME
+CONFIG=./configs/config.yml
+
+if [[ -d $LOGDIR ]]
+then
+    rm -rf $LOGDIR
+    echo " * Removed existing '$LOGDIR'"
+fi 
+
+catalyst-dl run --expdir src --config $CONFIG --logdir $LOGDIR \
+--no-apex \
+--no-distributed \
+--verbose
+```
