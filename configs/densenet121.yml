@@ -28,7 +28,7 @@ stages:
       callback: OptimizerCallback
       # accumulation_steps: 16
 
-    spearman:
+    wauc:
       callback: WeightedAUC
 
     saver:

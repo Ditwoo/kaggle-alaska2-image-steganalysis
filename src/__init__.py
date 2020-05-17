@@ -4,6 +4,7 @@ from catalyst.dl import SupervisedRunner as Runner
 # local
 from .experiment import Experiment
 from .metrics import WeightedAUC
+from .schedulers import CosineAnnealingWithRestartsLR
 from .models import (
     BinaryEfficientNet,
     BinaryDensenet,
@@ -11,6 +12,8 @@ from .models import (
 
 
 registry.Callback(WeightedAUC)
+
+registry.Scheduler(CosineAnnealingWithRestartsLR)
 
 registry.Model(BinaryEfficientNet)
 registry.Model(BinaryDensenet)

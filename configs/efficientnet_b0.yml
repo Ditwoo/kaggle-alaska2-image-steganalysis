@@ -20,6 +20,9 @@ stages:
   criterion_params:
     criterion: BCEWithLogitsLoss
 
+  # scheduler_params:
+  #   scheduler: CosineAnnealingWithRestartsLR
+
   callbacks_params:
     loss:
       callback: CriterionCallback
@@ -28,11 +31,14 @@ stages:
       callback: OptimizerCallback
       # accumulation_steps: 16
 
-    spearman:
+    wauc:
       callback: WeightedAUC
 
     saver:
       callback: CheckpointCallback
+
+    # scheduler:
+    #   callback: SchedulerCallback
 
     # early_stopping:
     #   callback: EarlyStoppingCallback
@@ -46,20 +52,4 @@ stages:
     
     optimizer_params:
       optimizer: Adam
-      lr: 0.003
-
-  stage2:
-    state_params:
-      num_epochs: 5
-    
-    optimizer_params:
-      optimizer: Adam
-      lr: 0.0001
-  
-  stage3:
-    state_params:
-      num_epochs: 5
-    
-    optimizer_params:
-      optimizer: Adam
-      lr: 0.00001
+      lr: 0.0003
