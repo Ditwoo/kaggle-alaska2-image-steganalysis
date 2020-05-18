@@ -23,7 +23,7 @@ stages:
   # scheduler_params:
   #   scheduler: CosineAnnealingWithRestartsLR
 
-  stage1:
+  stage1_sampler:
     state_params:
       num_epochs: 5
     

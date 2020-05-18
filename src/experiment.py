@@ -4,6 +4,7 @@ from collections import OrderedDict
 import albumentations as alb
 import albumentations.pytorch
 from pandas import read_csv
+from torch.utils.data.sampler import WeightedRandomSampler
 from catalyst.dl import ConfigExperiment
 # local files
 from .datasets import ImagesDataset as Dataset
@@ -57,9 +58,20 @@ class Experiment(ConfigExperiment):
                 labels=train["labels"].values,
                 transforms=TRAIN_AUGMENTATIONS,
             ),
-            "shuffle": True,
             # "collate_fn": my_collator,
         }
+        if stage.endswith("_sampler"):
+            datasets["train"]["sampler"] = WeightedRandomSampler(
+                # weights of labels in train dataset
+                weights=[0.75 if lbl == 1 else 0.25 for lbl in train["labels"].values],
+                # total number of samples
+                num_samples=df.shape[0],
+                replacement=True,
+            )
+            print(" * Using weighted random sampler in train dataset")
+        else:
+            datasets["train"]["shuffle"] = True
+
         print(f" * Num records in train dataset: {train.shape[0]}", flush=True)
 
         valid = df[df["folds"] == fold_index]
