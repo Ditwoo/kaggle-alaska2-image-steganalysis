@@ -6,38 +6,47 @@ import albumentations.pytorch
 from pandas import read_csv
 from torch.utils.data.sampler import WeightedRandomSampler
 from catalyst.dl import ConfigExperiment
+from catalyst.data.sampler import BalanceClassSampler
 # local files
-from .datasets import ImagesDataset as Dataset
-from .datasets import my_collator
+from .datasets import (
+    ImagesDataset,
+    OneHotLabelsImagesDataset
+)
 
 
 TRAIN_AUGMENTATIONS = alb.Compose([
     # alb.Resize(512, 512),
     alb.VerticalFlip(p=0.5),
     alb.HorizontalFlip(p=0.5),
-    alb.JpegCompression(quality_lower=75, quality_upper=100, p=0.5),
     alb.Normalize(),
-    # alb.ToFloat(max_value=255),
     alb.pytorch.ToTensorV2(),
 ])
 
 VALID_AUGMENTATIONS = alb.Compose([
     # alb.Resize(512, 512),
     alb.Normalize(),
-    # alb.ToFloat(max_value=255),
     alb.pytorch.ToTensorV2(),
 ])
 
 
+# TODO: label smoothing criterion
+
 class Experiment(ConfigExperiment):
 
-    def get_datasets(self, stage: str, folds: str, fold_index: int = None) -> OrderedDict:
+    def get_datasets(self,
+                     stage: str,
+                     folds: str,
+                     fold_index: int = None,
+                     is_multiclass: bool = False,
+                     use_sampling: bool = True) -> OrderedDict:
         """
 
         Arguments:
             stage (str): stage name
             folds (str): path to csv with folds
             fold_index (str): fold index to use as validation set
+            is_multiclass (bool): train as multiclass, default False
+            use_sampling (bool): use class sampling, default True
 
         Returns:
             orderd dict with train & valid datasets
@@ -45,44 +54,43 @@ class Experiment(ConfigExperiment):
 
         fold_index = os.environ.get("FOLD_INDEX") or fold_index
         if fold_index is None:
-            raise ValueError("Should be specified 'fold_index'!")
+            raise ValueError("Should be specified 'fold_index' or env variable 'FOLD_INDEX'!")
+
+        Dataset = OneHotLabelsImagesDataset if is_multiclass else ImagesDataset
 
         datasets = OrderedDict()
 
         df = read_csv(folds)
         train = df[df["folds"] != fold_index]
-
+        _images = train["images"].values
+        _target = train["labels" if not is_multiclass else "classes"].values
         datasets["train"] = {
             "dataset": Dataset(
-                images=train["images"].values,
-                labels=train["labels"].values,
+                images=_images,
+                labels=_target,
                 transforms=TRAIN_AUGMENTATIONS,
             ),
-            # "collate_fn": my_collator,
         }
-        if stage.endswith("_sampler"):
-            datasets["train"]["sampler"] = WeightedRandomSampler(
-                # weights of labels in train dataset
-                weights=[0.75 if lbl == 1 else 0.25 for lbl in train["labels"].values],
-                # total number of samples
-                num_samples=df.shape[0],
-                replacement=True,
+        if use_sampling:
+            datasets["train"]["sampler"] = BalanceClassSampler(
+                labels=_target,
+                mode="downsampling",
             )
-            print(" * Using weighted random sampler in train dataset")
+            datasets["train"]["shuffle"] = False
         else:
             datasets["train"]["shuffle"] = True
-
         print(f" * Num records in train dataset: {train.shape[0]}", flush=True)
 
         valid = df[df["folds"] == fold_index]
+        _images = valid["images"].values
+        _target = valid["labels" if not is_multiclass else "classes"].values
         datasets["valid"] = {
             "dataset": Dataset(
-                images=valid["images"].values,
-                labels=valid["labels"].values,
+                images=_images,
+                labels=_target,
                 transforms=VALID_AUGMENTATIONS,
             ),
-            "shuffle": False,
-            # "collate_fn": my_collator,
+            "shuffle": True,
         }
         print(f" * Num records in valid dataset: {valid.shape[0]}", flush=True)
 

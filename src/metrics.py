@@ -14,13 +14,13 @@ def _alaska_weighted_auc(y_true: np.ndarray, y_valid: np.ndarray) -> float:
         https://www.kaggle.com/anokas/weighted-auc-metric-updated
     """
     tpr_thresholds = [0.0, 0.4, 1.0]
-    weights =        [       2,   1]
+    weights = [2, 1]
 
     fpr, tpr, thresholds = metrics.roc_curve(y_true, y_valid, pos_label=1)
-    
+
     # size of subsets
     areas = np.array(tpr_thresholds[1:]) - np.array(tpr_thresholds[:-1])
-    
+
     # The total area is normalized by the sum of weights such that the final weighted AUC is between 0 and 1.
     normalization = np.dot(areas, weights)
     
@@ -47,14 +47,16 @@ def _alaska_weighted_auc(y_true: np.ndarray, y_valid: np.ndarray) -> float:
 
 
 class WeightedAUC(Callback):
-    def __init__(self, 
+    def __init__(self,
                  name: str = "wauc",
                  input_key: str = "targets",
-                 output_key: str = "logits"):
+                 output_key: str = "logits",
+                 mixup_threshold: float = None):
         super().__init__(CallbackOrder.Metric)
         self.name = name
         self.inp = input_key
         self.outp = output_key
+        self.threshold = mixup_threshold
         self.target_container = None
         self.preds_container = None
 
@@ -64,9 +66,51 @@ class WeightedAUC(Callback):
 
     def on_batch_end(self, state: State) -> None:
         target = state.input[self.inp].detach().cpu().numpy().astype(int).flatten()
+        if self.threshold is not None:
+            target = (target >= self.threshold).astype(int)
         self.target_container.append(target)
 
         pred = torch.sigmoid(state.output[self.outp].detach()).cpu().numpy().flatten()
+        self.preds_container.append(pred)
+
+        # state.batch_metrics[f"batch_{self.name}"] = _alaska_weighted_auc(target, pred)
+
+    def on_loader_end(self, state: State) -> None:
+        score = _alaska_weighted_auc(
+            np.concatenate(self.target_container),
+            np.concatenate(self.preds_container)
+        )
+        state.loader_metrics[self.name] = score
+        # free memory
+        self.target_container = None
+        self.preds_container = None
+
+
+class SingleClassWeightedAUC(Callback):
+    def __init__(self,
+                 class_index: int = 0,
+                 name: str = "sc_wauc",
+                 input_key: str = "targets",
+                 output_key: str = "logits"):
+        super().__init__(CallbackOrder.Metric)
+        self.class_idx = class_index
+
+        self.name = name
+        self.inp = input_key
+        self.outp = output_key
+
+        self.target_container = None
+        self.preds_container = None
+
+    def on_loader_start(self, state: State) -> None:
+        self.target_container = []
+        self.preds_container = []
+
+    def on_batch_end(self, state: State) -> None:
+        target = state.input[self.inp].detach().cpu().numpy().argmax(dim=1).clip(0, 1).astype(int)
+        self.target_container.append(target)
+
+        pred = 1 - torch.softmax(state.output[self.outp].detach(), dim=1).cpu().numpy()[:, self.class_idx]
         self.preds_container.append(pred)
 
         # state.batch_metrics[f"batch_{self.name}"] = _alaska_weighted_auc(target, pred)
