@@ -13,9 +13,17 @@ stages:
 
   data_params:
     num_workers: 16
-    batch_size: 16
+    loaders_params:
+      train:
+        batch_size: 12
+      valid:
+        batch_size: 32
     folds: data/combined.csv
     fold_index: 0
+    train_dataset:
+      mixup_alpha: [0.1, 0.4]
+      mixup_prob: 0.25
+
 
   criterion_params:
     criterion: BCEWithLogitsLoss
@@ -29,7 +37,7 @@ stages:
     
     optimizer_params:
       optimizer: Adam
-      lr: 0.0003
+      lr: 0.00001
 
     callbacks_params:
       loss:
@@ -40,11 +48,12 @@ stages:
 
       wauc:
         callback: WeightedAUC
+        mixup_threshold: 0.5
 
       saver:
         callback: CheckpointCallback
         load_on_stage_start:
-          model: ./logs/efficientnet-b0-magic-constant/checkpoints/best.pth
+          model: ./logs/efficientnet-b0-magic-constant-continue2/checkpoints/best.pth
         save_n_best: 2
 
   stage2:
@@ -53,7 +62,7 @@ stages:
     
     optimizer_params:
       optimizer: Adam
-      lr: 0.00015
+      lr: 0.000005
 
     callbacks_params:
       loss:
@@ -64,29 +73,9 @@ stages:
 
       wauc:
         callback: WeightedAUC
+        mixup_threshold: 0.5
 
       saver:
         callback: CheckpointCallback
         save_n_best: 2
 
-  stage3:
-    state_params:
-      num_epochs: 5
-    
-    optimizer_params:
-      optimizer: Adam
-      lr: 0.00005
-
-    callbacks_params:
-      loss:
-        callback: CriterionCallback
-
-      optim:
-        callback: OptimizerCallback
-
-      wauc:
-        callback: WeightedAUC
-
-      saver:
-        callback: CheckpointCallback
-        save_n_best: 2

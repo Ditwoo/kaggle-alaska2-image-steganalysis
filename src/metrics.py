@@ -48,12 +48,12 @@ def _alaska_weighted_auc(y_true: np.ndarray, y_valid: np.ndarray) -> float:
 
 class WeightedAUC(Callback):
     def __init__(self,
-                 name: str = "wauc",
+                 metric_name: str = "wauc",
                  input_key: str = "targets",
                  output_key: str = "logits",
                  mixup_threshold: float = None):
         super().__init__(CallbackOrder.Metric)
-        self.name = name
+        self.name = metric_name
         self.inp = input_key
         self.outp = output_key
         self.threshold = mixup_threshold
@@ -89,13 +89,13 @@ class WeightedAUC(Callback):
 class SingleClassWeightedAUC(Callback):
     def __init__(self,
                  class_index: int = 0,
-                 name: str = "sc_wauc",
+                 metric_name: str = "sc_wauc",
                  input_key: str = "targets",
                  output_key: str = "logits"):
         super().__init__(CallbackOrder.Metric)
         self.class_idx = class_index
 
-        self.name = name
+        self.name = metric_name
         self.inp = input_key
         self.outp = output_key
 
@@ -107,7 +107,7 @@ class SingleClassWeightedAUC(Callback):
         self.preds_container = []
 
     def on_batch_end(self, state: State) -> None:
-        target = state.input[self.inp].detach().cpu().numpy().argmax(dim=1).clip(0, 1).astype(int)
+        target = state.input[self.inp].detach().cpu().numpy().argmax(axis=1).clip(0, 1).astype(int)
         self.target_container.append(target)
 
         pred = 1 - torch.softmax(state.output[self.outp].detach(), dim=1).cpu().numpy()[:, self.class_idx]

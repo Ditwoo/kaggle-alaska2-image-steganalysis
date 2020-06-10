@@ -1,0 +1,101 @@
+model_params:
+  model: BinaryEfficientNet
+  pretrain: efficientnet-b3
+
+# distributed_params:
+#   opt_level: O1
+#   syncbn: True
+
+stages:
+  state_params:
+    main_metric: wauc
+    minimize_metric: False
+
+  data_params:
+    num_workers: 16
+    loaders_params:
+      train:
+        batch_size: 16
+      valid:
+        batch_size: 32
+    folds: data/combined.csv
+    fold_index: 0
+
+  criterion_params:
+    criterion: BCEWithLogitsLoss
+
+  stage1:
+    state_params:
+      num_epochs: 10
+
+    optimizer_params:
+      optimizer: Adam
+      lr: 0.0003
+
+    callbacks_params:
+      loss:
+        callback: CriterionCallback
+      optim:
+        callback: OptimizerCallback
+      wauc:
+        callback: WeightedAUC
+      saver:
+        callback: CheckpointCallback
+        save_n_best: 2
+
+  # stage2:
+  #   state_params:
+  #     num_epochs: 5
+    
+  #   optimizer_params:
+  #     optimizer: Adam
+  #     lr: 0.0003
+
+  #   callbacks_params:
+  #     loss:
+  #       callback: CriterionCallback
+  #     optim:
+  #       callback: OptimizerCallback
+  #     wauc:
+  #       callback: WeightedAUC
+  #     saver:
+  #       callback: CheckpointCallback
+  #       save_n_best: 2
+
+  # stage3:
+  #   state_params:
+  #     num_epochs: 5
+    
+  #   optimizer_params:
+  #     optimizer: Adam
+  #     lr: 0.00015
+
+  #   callbacks_params:
+  #     loss:
+  #       callback: CriterionCallback
+  #     optim:
+  #       callback: OptimizerCallback
+  #     wauc:
+  #       callback: WeightedAUC
+  #     saver:
+  #       callback: CheckpointCallback
+  #       save_n_best: 2
+
+  # stage4:
+  #   state_params:
+  #     num_epochs: 5
+    
+  #   optimizer_params:
+  #     optimizer: Adam
+  #     lr: 0.00005
+
+  #   callbacks_params:
+  #     loss:
+  #       callback: CriterionCallback
+  #     optim:
+  #       callback: OptimizerCallback
+  #     wauc:
+  #       callback: WeightedAUC
+  #     saver:
+  #       callback: CheckpointCallback
+  #       save_n_best: 2
