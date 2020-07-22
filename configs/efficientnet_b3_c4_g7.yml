@@ -1,0 +1,82 @@
+
+# Classes:
+#   0 - cover images (without modification)
+#   1 - jmipod
+#   2 - juniward
+#   3 - uerd
+
+shared:
+  fold_index: &fidx 0
+  fold_file: &ff data/combined_group.csv
+  label_smoothing: &smooth 0.1
+  acumulation: &acum 2
+
+
+model_params:
+  model: MulticlassEfficientNet
+  pretrain: efficientnet-b3
+  n_classes: 4
+
+# distributed_params:
+#   opt_level: O1
+#   syncbn: True
+
+stages:
+  state_params:
+    main_metric: wauc
+    minimize_metric: False
+
+  data_params:
+    num_workers: 16
+    loaders_params:
+      train:
+        batch_size: 18
+      valid:
+        batch_size: 64
+    folds: *ff
+    fold_index: *fidx
+    is_multiclass: True
+
+  criterion_params:
+    criterion: LabelSmoothingLoss
+    smoothing: *smooth
+
+  stage1:
+    state_params:
+      num_epochs: 5
+
+    scheduler_params:
+      scheduler: ReduceLROnPlateau
+      mode: min
+      factor: 0.5
+      patience: 1
+      verbose: False
+      threshold: 0.0001
+      threshold_mode: abs
+      cooldown: 0
+      min_lr: 0.00000001
+      eps: 0.00000001
+
+    callbacks_params:
+      loss:
+        callback: CriterionCallback
+      optim:
+        callback: OptimizerCallback
+        accumulation_steps: *acum
+      wauc:
+        callback: SingleClassWeightedAUC
+        class_index: 0
+        metric_name: wauc
+      scheduler:
+        callback: SchedulerCallback
+        reduced_metric: loss
+      saver:
+        callback: CheckpointCallback
+        save_n_best: 3
+        load_on_stage_start:
+          model: ./logs/efficientnet-b3-c4-grouped6/checkpoints/best_full.pth
+          optimizer: ./logs/efficientnet-b3-c4-grouped6/checkpoints/best_full.pth
+
+    optimizer_params:
+      optimizer: AdamW
+      lr: 0.00005

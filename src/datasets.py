@@ -7,9 +7,10 @@ from torch.utils.data._utils.collate import default_collate
 
 
 class ImagesDataset(Dataset):
-    def __init__(self, images, labels=None, transforms=None):
+    def __init__(self, images, labels=None, transforms=None, bgr2rgb=False):
         self.images = images
         self.labels = labels
+        self.bgr2rgb = bgr2rgb
         self.transforms = transforms
 
     def __len__(self) -> int:
@@ -17,7 +18,9 @@ class ImagesDataset(Dataset):
 
     def __getitem__(self, index: int) -> Union[tuple, torch.FloatTensor]:
         file = self.images[index]
-        image = cv2.imread(file) # [:, :, -1]  # bgr -> rgb
+        image = cv2.imread(file)
+        if self.bgr2rgb:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         if self.transforms is not None:
             image = self.transforms(image=image)["image"]
         if self.labels is None:
@@ -33,13 +36,15 @@ def _one_hot(size: int, target: int) -> torch.Tensor:
 
 
 class OneHotLabelsImagesDataset(ImagesDataset):
-    def __init__(self, images, labels=None, transforms=None):
-        super().__init__(images, labels, transforms)
+    def __init__(self, images, labels=None, transforms=None, bgr2rgb=False):
+        super().__init__(images, labels, transforms, bgr2rgb)
         self.n_classes = None if labels is None else (np.max(labels) + 1)
 
     def __getitem__(self, index: int):
         file = self.images[index]
-        image = cv2.imread(file) # [:, :, -1]  # bgr -> rgb
+        image = cv2.imread(file)
+        if self.bgr2rgb:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         if self.transforms is not None:
             image = self.transforms(image=image)["image"]
         if self.labels is None:
